@@ -62,29 +62,57 @@ class Game {
     }
 
     setupInput() {
-        // Universal input handler (Mouse + Touch)
-        const onInput = (e) => {
-            // Initialize audio on first interaction
-            if (!this.audio.initialized) {
-                this.audio.init();
+        // Unified handler for both click and touch
+        const handlePointer = (e) => {
+            // Get coordinates from touch or mouse
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
             }
 
-            const pos = this.getInputPos(e);
+            // Calculate canvas-space coordinates
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = GAME.WIDTH / rect.width;
+            const scaleY = GAME.HEIGHT / rect.height;
+            const mx = (clientX - rect.left) * scaleX;
+            const my = (clientY - rect.top) * scaleY;
 
-            // 1. Check for coordinate-based button clicks FIRST
-            this.handleCoordinateInput(pos.x, pos.y);
+            // Check sound button (always active)
+            if (distance(mx, my, GAME.WIDTH - 30, GAME.HEIGHT - 30) < 20) {
+                this.audio.toggleMute();
+                return;
+            }
 
-            // 2. Handle state-based generic input (flapping, state transitions)
+            // Mode select buttons
+            if (this.state === 'MODE_SELECT') {
+                this.handleModeSelectClick(mx, my);
+                return;
+            }
+
+            // Stage complete buttons
+            if (this.state === 'STAGE_COMPLETE' && this.stageCompleteDelay > 500) {
+                this.handleStageCompleteClick(mx, my);
+                return;
+            }
+
+            // All other states — generic input
             this.handleInput(e);
-
-            // Prevent default to stop scrolling/zooming on mobile
-            if (e.type === 'touchstart') {
-                e.preventDefault();
-            }
         };
 
-        this.canvas.addEventListener('click', onInput);
-        this.canvas.addEventListener('touchstart', onInput, { passive: false });
+        // Touch (mobile)
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handlePointer(e);
+        }, { passive: false });
+
+        // Click (desktop)
+        this.canvas.addEventListener('click', (e) => {
+            handlePointer(e);
+        });
 
         // Keyboard
         document.addEventListener('keydown', (e) => {
@@ -98,58 +126,18 @@ class Game {
         });
     }
 
-    getInputPos(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = GAME.WIDTH / rect.width;
-        const scaleY = GAME.HEIGHT / rect.height;
-
-        // Handle both mouse and touch events
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-
-        if (e.touches && e.touches[0]) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else if (e.changedTouches && e.changedTouches[0]) {
-            clientX = e.changedTouches[0].clientX;
-            clientY = e.changedTouches[0].clientY;
-        }
-
-        return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
-        };
-    }
-
-    handleCoordinateInput(mx, my) {
-        // Check sound button
-        if (distance(mx, my, GAME.WIDTH - 30, GAME.HEIGHT - 30) < 20) {
-            this.audio.toggleMute();
-            return true; // Input handled
-        }
-
-        // Mode select buttons
-        if (this.state === 'MODE_SELECT') {
-            this.handleModeSelectClick(mx, my);
-            return true;
-        }
-
-        // Stage complete — next stage or menu
-        if (this.state === 'STAGE_COMPLETE' && this.stageCompleteDelay > 500) {
-            this.handleStageCompleteClick(mx, my);
-            return true;
-        }
-
-        return false;
-    }
-
     handleInput(e) {
+        // Initialize audio on first interaction
+        if (!this.audio.initialized) {
+            this.audio.init();
+        }
+
         switch (this.state) {
             case 'MENU':
                 this.state = 'MODE_SELECT';
                 break;
             case 'MODE_SELECT':
-                // Handled by handleCoordinateInput
+                // Handled by click position detection
                 break;
             case 'GET_READY':
                 this.state = 'PLAYING';
@@ -158,17 +146,12 @@ class Game {
                 this.audio.playFlap();
                 break;
             case 'PLAYING':
-                // For coordinate-based states (like playing), 
-                // we only flap if we didn't click the mute button
-                const pos = this.getInputPos(e);
-                if (distance(pos.x, pos.y, GAME.WIDTH - 30, GAME.HEIGHT - 30) > 30) {
-                    this.player.flap();
-                    this.audio.playFlap();
-                    this.particles.emitFeathers(this.player.x - 10, this.player.y + 5, 2);
-                }
+                this.player.flap();
+                this.audio.playFlap();
+                this.particles.emitFeathers(this.player.x - 10, this.player.y + 5, 2);
                 break;
             case 'STAGE_COMPLETE':
-                // Handled by handleCoordinateInput
+                // Handled by click position detection
                 break;
             case 'GAME_OVER':
                 if (this.gameOverDelay > 500) {
