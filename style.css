@@ -1,0 +1,113 @@
+/* ============================================
+   Aami & the Flying Hen — Styles
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0a1a;
+    font-family: 'Baloo 2', 'Comic Sans MS', cursive, sans-serif;
+    /* Prevent text selection on mobile */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Prevent pull-to-refresh */
+    overscroll-behavior: none;
+}
+
+#gameContainer {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0a0a2e 0%, #1a1a3e 30%, #0d1b2a 70%, #0a0a1a 100%);
+    position: relative;
+}
+
+/* Decorative background particles */
+#gameContainer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(2px 2px at 10% 20%, rgba(255,215,0,0.15) 50%, transparent 100%),
+        radial-gradient(2px 2px at 30% 70%, rgba(255,215,0,0.1) 50%, transparent 100%),
+        radial-gradient(2px 2px at 50% 30%, rgba(255,215,0,0.12) 50%, transparent 100%),
+        radial-gradient(2px 2px at 70% 80%, rgba(255,215,0,0.08) 50%, transparent 100%),
+        radial-gradient(2px 2px at 85% 15%, rgba(255,215,0,0.15) 50%, transparent 100%),
+        radial-gradient(2px 2px at 90% 50%, rgba(255,215,0,0.1) 50%, transparent 100%);
+    pointer-events: none;
+    animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+#gameCanvas {
+    display: block;
+    /* Crisp pixel rendering */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: pixelated;
+    /* Canvas shadow glow */
+    box-shadow:
+        0 0 40px rgba(135, 206, 235, 0.15),
+        0 0 80px rgba(135, 206, 235, 0.08),
+        0 20px 60px rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Prevent touch callout on iOS */
+canvas {
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Loading state */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFD700;
+    font-size: 24px;
+    font-family: 'Baloo 2', cursive;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Mobile optimizations */
+@media (max-width: 600px) {
+    #gameCanvas {
+        border-radius: 0;
+        box-shadow: none;
+    }
+}
+
+@media (orientation: portrait) and (max-width: 600px) {
+    #gameContainer {
+        align-items: flex-start;
+        padding-top: env(safe-area-inset-top, 0);
+    }
+}
